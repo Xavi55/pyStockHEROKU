@@ -219,7 +219,12 @@
     document.body.style.background = "Blue";
 }
 	*/
-	var socket = io.connect('localhost:8000');
+	namespace='';
+	//var socket = io.connect('localhost:8000');
+	var protocol = window.location.protocol;
+	var socket = io.connect(protocol + '//' + document.domain + ':' + location.port + namespace);
+		console.log('connected to: '+protocol + '//' + document.domain + ':' + location.port + namespace);
+	
 		$('.s').bind('keyup',function(e)
 		{
 			//e.preventDefault();
