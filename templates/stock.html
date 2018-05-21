@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Robo_StockBroker</title>
+			<meta name="viewport" content="width=device-width, initial-scale=1">
+		 <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	</head>
+	<style>
+			*{
+				margin: 0 0 0 0;
+				padding:0 0 0 0;
+			 }
+			 html
+			 {
+			 	height:100%;
+			 }
+			 body
+			 {
+			 	font-family:Helvetica;
+			 	margin-left:5%;
+			 	margin-right:5%;
+			 }
+			.box
+			{
+				overflow-x: hidden;
+    			overflow-y: auto;
+
+				border:5px solid black;
+				border-radius:10px;
+				width:auto;
+				height:400px;
+				margin: 0px 2% 0 2%;
+				padding:10px 10px;
+			}
+			h2
+			{
+				margin:10px 0 5px 5px ;
+			}
+			.s
+			{
+				border:3px solid black;
+				border-radius:5px;
+				font-size:1.5em;
+				margin:20px 0px 0 10%;
+				padding-left:5px;
+				position:relative;
+			}
+			.data
+			{
+				/*border-bottom:5px black solid;*/
+				padding:1% 1% 3% 1%;
+				height:2%;
+			}
+			.data:nth-child(odd)
+			{
+				background-color:black;
+				color:white;
+				border-radius:5px;
+			}
+			.price
+			{
+				font-size:2em;
+			}
+			.open,.percent,.de,.mcap
+			{
+				float:left;
+				padding:0 2% 0 0;
+			}
+			.eps,.pe,.de,.pb
+			{
+				float:left;
+				padding:0 2% 0 0;
+			}
+			.price,.open,.percent,.de,.mcap,.eps,.pe,.de,.pb,.show,.rating
+			{
+				display:none;
+			}
+			/**Button**/
+			.show
+			{
+				float:left;
+				padding:0 5px 0 5px;
+				background-color:#4e635b;
+				color:black;
+				border-radius:5px;
+				cursor:pointer;
+				margin-right: 3%;
+			}
+			.show:hover
+			{
+				background-color:#abd6c5;
+			}
+			.show:active
+			{
+				margin-bottom:2%;	
+			}
+			/***/
+			.data:hover > h4
+			{
+				display:block;
+			}
+			
+			/*
+			.data:hover .chart
+			{
+				display:none;
+				z-index:5;
+				
+				position:absolute;
+				top:30.8%;
+				left:-1%;
+			}
+			*/
+			
+			.data:hover
+			{
+				height:30%;
+			}
+			/*************/
+			.modal 
+			{
+				display: none;
+				position: absolute;
+				z-index: 1;
+				padding-top: 100px;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				overflow: auto;
+				background-color: black;
+				color: white;
+			}
+			#close
+			{
+			position: absolute;
+			top: 10px;
+			right: 25px;
+			font-size:4em;
+			font-weight:800;
+			top:0;
+			right:5%;
+			}
+			#close:hover,#close:focus
+			{
+			color:red;
+			cursor:pointer;
+			}
+			.col
+			{
+				float:left;
+				width:45%;
+				margin-left:1%;
+				padding-left:1%;
+			}
+			.col:nth-child(odd)/***************Left side only in .sent*/
+			{
+				border-left:6px solid white;
+			}
+			.center
+			{
+				text-align:center;
+			}
+			.time
+			{
+				width:auto;
+				margin:40px 0 0 58%;
+			}
+			
+			/*Inline CSS for Good & Bad in .sent*/
+			
+			
+	</style>
+	<body>
+		<br><h2 style='text-align:center'>Robo_Adviser</h2>
+		<div class="input">
+			<input class=s name=stock type=text placeholder="Stock Symbol" maxlength="5" autofocus></input>
+		</div>
+		<div class=time></div>
+		<div class="box"></div>
+		<div class=modal>
+			<h2 id=close>&times</h2>
+		</div>
+	</body>
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+	
+	<!---	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	
+-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+	<script type=text/javascript>
+	//time check : millitary
+	var hour = new Date().getHours();
+	var day = new Date().getDay();
+	
+	if((day!=6 || day!=7) && (hour>=7 && hour<=15) )
+	{
+		$('.time').append('<h4>Stocks are now open until 4:00PM EST</h4>');
+	}
+	else if(day==6 || day ==7)
+	{
+		$('.time').append('<h4>Stocks are closed untill Monday at 9:30 EST</h4>')
+		$('html').css({'background':'linear-gradient(#3f3e54,black)'});
+		$('body').css('color','white');
+		$('.box').css('border','white 5px solid');		
+	}
+	else
+	{
+		$('.time').append('<h4>Stocks are closed untill 9:30 EST Tomorrow .</h4>');
+		$('html').css({'background':'linear-gradient(#3f3e54,black)'});
+		$('body').css('color','white');
+		$('.box').css('border','white 5px solid');
+	}
+	/*
+	if (today >= 7 && today <= 16) {
+   document.body.style.background = "Red";
+} else {
+    document.body.style.background = "Blue";
+}
+	*/
+	var socket = io.connect('localhost:8000');
+		$('.s').bind('keyup',function(e)
+		{
+			//e.preventDefault();
+			if(e.keyCode==13)
+			{ 
+				var s =$('input.s').val();
+				$('input.s').val('');
+				if(s=='')
+					alert('Please enter stock symbol');
+				else
+				{
+					socket.emit('get',{sym:s});
+				}
+			}
+		});
+		
+		socket.on('reply',function(data)
+		{ 
+			console.log('added '+data);
+			var tik=data.n.split(' ')[0];
+			//console.log(tik);
+			$('.box').append('<div class=data><h4 class=name>'+data.n+'</h4><h4 class=price id='+tik+'price>Price: $'+data.p+'</h4><h4 class=open>Open: $'+data.op+'</h4><h4 class=percent>Change: <span class=p id='+tik+'diff>'+data.diff+'</span></h4><h4 class=mcap>Market Cap: $'+data.cap+'</h4><h4 class=eps>Earnings/Share: $'+data.eps+'</h4><h4 class=pe>P/E: '+data.pe+'</h4><h4 class=de>Debt/Equity: '+data.de+'</h4><h4 class=pb>Book Value: '+data.pb+'</h4><div class=chart id='+tik+'chart style=display:none></div><br><br><h4 class=show onclick=show('+tik+'chart);>Show Competition</h4> <div id='+tik+'sent class=sent style=display:none><h3 class=center>News Sentiment</h3><br><div><h4 class="center" style="float:left;width:50%;">Good</h4><h4 class="center" style="float:left;width:50%;">Bad</h4><br><br></div></div><h4 class=show onclick=show('+tik+'sent)>Show Sentiment</h4><h4 class=rating id='+tik+'rating></h4></div>');
+			//ROUNDING Math.round(data.p*100)/100
+			socket.emit('fin',{sym:tik});
+			socket.emit('chart',{sym:tik});
+			
+			socket.emit('sentiment',{sym:tik});
+			
+			n = setInterval(function(){updateP(tik)},11000);
+			//^should i use assoc.arrays to clear/delete this interval obj in the future?
+		});
+		
+		function updateP(sName)
+		{
+			console.log(sName+' is Updated')
+			//var x = sName.split(' ')[0];
+			socket.emit('fetch',{sym:sName});
+		}
+		socket.on('update',function(x)
+		{
+			$('#'+x.n+'price').text('Price: $'+x.p)//Math.round(x.p*100)/100);
+			$('#'+x.n+'diff').text(x.diff);
+			//console.log('12345');
+			//console.log(x.diff);
+			if(x.diff[2]==='-')
+				$('#'+x.n+'diff').css('color','red');
+			else
+				$('#'+x.n+'diff').css('color','#00ff61');
+		});
+		
+		socket.on('paste',function(x)
+		{
+			$('#'+x.n+'chart').append('<embed type=image/svg+xml src='+x.chart+'>')
+			$('#'+x.n+'rating').append('Perfomance has '+x.perf+' and ');
+		});
+			
+		socket.on('sent',function(x)
+		{
+			console.log(x.data[0][0]);
+			console.log('new sentiment data/news added');
+			//alert('new data');
+			console.log(x.data);
+			
+			$('#'+x.n+'rating').append('seems to have '+x.data[4]+' news.')
+			//x.data[4]="";
+			
+				//$.each(x.data,function (i)
+				for(var i=0; i<4;i++)
+				{
+				
+					if (x.data[i][0]=='')//searching for an undefined array didn't work the first time
+					{
+						$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div>')
+					
+						if(x.data[i][1]=='')
+						{	
+							$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+						}
+						else
+						{
+							$('#'+x.n+'sent').append('<div class="col"><p>'+x.data[i][1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+						}
+					}
+					else
+					{
+						$('#'+x.n+'sent').append('<div class="col"><p>'+x.data[i][0]+'</p></div><div class="col"><p>'+x.data[i][1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+					}
+					//console.log('good :'+x.data[i][0]);
+					//console.log('bad :'+x.data[i][1]);
+					//console.log('link :'+x.data[i][2]);
+				}//);
+		});
+			
+	function exam()
+	{
+		$('.modal').css('display','block')
+	}
+			
+	function show(elem)
+	{
+		var $data=$(elem).clone()
+		$('.modal').append($data)
+		$($data).css('display','block')
+		$('.modal').css('display','block')
+	}//difficult
+	//cannot add events to dynamically made DOM/elemnts
+	//supposedly they don't exist!
+	
+	$(document).keyup(function(e)
+	{
+		if(e.which==27) close()
+	})
+	$('#close').click(function(){
+		close()
+	})
+	function close()
+	{
+		$('.modal .sent').remove()//remove news sentiment
+		$('.modal .chart').remove()//remove any chart on modal
+		//$('.modal').children().last().remove();
+		$('.modal').css('display','none')
+	}
+
+		//API KEY for Alpha Vantage EOQA5AGR365JSWES
+	</script>
+</html>
