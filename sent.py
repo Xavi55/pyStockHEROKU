@@ -2,6 +2,8 @@
 import requests
 from bs4 import BeautifulSoup
 from textblob import TextBlob
+import nltk
+nltk.download('punkt')
 
 def feels(stock):
 	base='https://www.reuters.com/'
