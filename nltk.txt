@@ -1,0 +1,5 @@
+wordnet
+reuters
+brown
+movie_reviews
+conll2000
