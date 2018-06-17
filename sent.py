@@ -2,8 +2,8 @@
 import requests
 from bs4 import BeautifulSoup
 from textblob import TextBlob
-#import nltk #heroku stuff
-#nltk.download('punkt') #heroku stuff
+import nltk #heroku stuff
+nltk.download('punkt') #heroku stuff
 
 def feels(stock):
 	base='https://www.reuters.com/'
