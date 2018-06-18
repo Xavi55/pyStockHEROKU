@@ -193,23 +193,25 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
 	<script type=text/javascript>
 	//time check :
+	var open =0;
 	var hour = new Date().getHours();
 	var day = new Date().getDay();
 	var minute = new Date().getMinutes();
-	if( (day!=6 && day!=0) && ((hour+(minute/100))>9.3 && hour<=16 ) )
+	if( (day!=6 && day!=0) && ((hour+(minute/100))>9.3 && hour<=15 ) )
 	{
-		$('.time').append('<h4>Stocks are now open until 4:00PM EST</h4>');
+		$('.time').append('<h4>Stocks are now open until 4:00PM EST.</h4>');
+		open=1;
 	}
 	else if(day==6 || day ==0)
 	{
-		$('.time').append('<h4>Stocks are closed until Monday at 9:30 EST</h4>')
+		$('.time').append('<h4>Stocks are closed until Monday at 9:30 EST.</h4>')
 		$('html').css({'background':'linear-gradient(#3f3e54,black)'});
 		$('body').css('color','white');
-		$('.box').css('border','white 5px solid');		
+		$('.box').css('border','white 5px solid');
 	}
 	else
 	{
-		$('.time').append('<h4>Stocks are closed until 9:30 EST tomorrow .</h4>');
+		$('.time').append('<h4>Stocks are closed until 9:30 EST tomorrow.</h4>');
 		$('html').css({'background':'linear-gradient(#3f3e54,black)'});
 		$('body').css('color','white');
 		$('.box').css('border','white 5px solid');
@@ -255,7 +257,8 @@
 			
 			socket.emit('sentiment',{sym:tik});
 			
-			n = setInterval(function(){updateP(tik)},11000);
+			if(open)
+				n = setInterval(function(){updateP(tik)},11000);
 			//^should i use assoc.arrays to clear/delete this interval obj in the future?
 		});
 		
