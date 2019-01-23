@@ -185,28 +185,28 @@ def make(n):
 	end=datetime.today()
 	x=stock(n['sym'])
 	comp=x.getComp()#retrieve competition
-	data=web.DataReader(str(n['sym']).upper(),'robinhood',start,end)##must uppercase stock tik?
+	data=web.DataReader(str(n['sym']).upper(),'iex',start,end)##must uppercase stock tik?
 	
-	debut=float(data['close_price'][0])#determine if stock has grown last year
-	fin=float(data['close_price'][-1])
+	debut=float(data['close'][0])#determine if stock has grown last year
+	fin=float(data['close'][-1])
 	
 	if fin > debut:
 		rate="grown"
 	else:
 		rate="fell"
 	
-	data=conv(data['close_price'].astype('float64'))
+	data=conv(data['close'])#convert to %Growth
 	line_chart=pygal.Line(height=400,style=DarkStyle)
 	line_chart.title='Performance Since Last Year'
 	line_chart.x_title='Days'
 	line_chart.y_title='% Change'
-	line_chart.x_labels=data.reset_index()['begins_at']#label x-axis by dates
+	line_chart.x_labels=data.reset_index()['date']#label x-axis by dates
 	line_chart.add(n['sym'], data)
 	for i in comp:
 		#print i
 		try:
-			s=web.DataReader(str(i[0]),'robinhood',start,end)
-			s=conv(s['close_price'].astype('float64'))
+			s=web.DataReader(str(i[0]),'iex',start,end)
+			s=conv(s['close'])#convert to %Growth
 			line_chart.add(i[1],s)
 		except:
 			pass

@@ -2,8 +2,8 @@
 import requests
 from bs4 import BeautifulSoup
 from textblob import TextBlob
-import nltk #heroku stuff
-nltk.download('punkt') #heroku stuff
+#import nltk #heroku stuff
+#nltk.download('punkt') #heroku stuff
 
 def feels(stock):
 	base='https://www.reuters.com/'
@@ -21,34 +21,39 @@ def feels(stock):
 
 	for i,link in enumerate(links):
 		if i%3==0:
+			
+			print ('Searching in article #%s'%(i)) #article number on page
+
 			inner=link.a.get('href')
 			url2=requests.get(base+inner)
 			page=BeautifulSoup(url2.content,'html.parser')
-			article=page.find('div',{'class':'body_1gnLA'}).text
-			caption=page.find('span',{'class':'caption_KoNH1'})#remove pics
-			if caption != None:
-				article=article.replace(caption.text,'')
-			print ('Searching in article #:%s'%(i)) #article number on page
+			article=page.find('div',{'class':'StandardArticleBody_body'}).text
+			unwanted_text=page.findAll('div',{'class':'Image_caption'})#images have capitions
+			for words in unwanted_text:
+				article = article.replace(words.text,'')#remove caption
+			
 			cut=article.find('-')+2
-			sentences=TextBlob(article[cut:]).sentences #frag article into sentences
+			cut2=article.find('Reporting by')
+			article = article[cut:cut2]
+			sentences=TextBlob(article).sentences #frag article into sentences
 			
-			if sentences == []:
+			if len(sentences) == 0:
 				continue
-			
-			for sentence in sentences[:-1]:#ignore author stamp
+
+			for sentence in sentences:
 				#print sentence
 				#print sentence.sentiment
 				#print
 				
 				if sentence.sentiment.polarity >.3 or .1<sentence.sentiment.polarity<.3 and sentence.sentiment.subjectivity<.46:
 					#print sentence
-					pos=pos+1
+					pos+=1
 					good.append(str(sentence))#.decode(encoding='ascii',errors='ignore')
 
 #<.3
 				elif sentence.sentiment.polarity < -1 or sentence.sentiment.subjectivity<.3 :
 					#print sentence
-					neg=neg+1
+					neg+=1
 					bad.append(str(sentence))#.decode(encoding='ascii',errors='ignore')
 		
 			#print ('The number of pos sentences was : %s'%(pos))
@@ -69,6 +74,8 @@ def feels(stock):
 			'''
 			
 			array.append([good,bad,base+inner])
+			#append good sentenees, bad, & the src link
+
 			#articles['good'].append(good)
 			#articles['bad'].append(bad)
 			#articles['source'].append(base+inner)
@@ -90,7 +97,9 @@ def feels(stock):
 		rate="bad"		
 	array.append(rate)
 	
+	#print len(array)
 	return array
-	#return articles
-	#print array
-#feels('fb')#testing		
+
+
+#test the script
+#feels('MMM')
