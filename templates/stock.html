@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Robo_StockBroker</title>
+		<title>stock_Adviser</title>
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 		 <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 	</head>
@@ -291,7 +291,13 @@
 		
 		socket.on('reply',function(data)
 		{ 
-			console.log('added '+data);
+			if(data.status==1)
+			{
+				alert(data.mess);
+			}
+			else
+			{
+			console.log('added',data.n);
 			var tik=data.n.split(' ')[0];
 			//console.log(tik);
 			$('.box').append('<div id='+tik+' class=data><h4 class=name>'+data.n+'<span class=kill onclick=kill('+tik+')>❌</span></h4><h4 class=price id='+tik+'price>Price: $'+data.p+'</h4><h4 class=open>Open: $'+data.op+'</h4><h4 class=percent>Change: <span class=p id='+tik+'diff>'+data.diff+'</span></h4><h4 class=mcap>Market Cap: $'+data.cap+'</h4><h4 class=eps>Earnings/Share: $'+data.eps+'</h4><h4 class=pe>P/E: '+data.pe+'</h4><h4 class=de>Debt/Equity: '+data.de+'</h4><h4 class=pb>Book Value: '+data.pb+'</h4><div class=chart id='+tik+'chart style=display:none></div><br><br><h4 class=show onclick=show('+tik+'chart);>Show Competition</h4> <div id='+tik+'sent class=sent style=display:none><h3 class=center>News Sentiment</h3><br><div><h4 class="center" style="float:left;width:50%;">Good</h4><h4 class="center" style="float:left;width:50%;">Bad</h4><br><br></div></div><h4 class=show onclick=show('+tik+'sent)>Show Sentiment</h4><h4 class=rating id='+tik+'rating></h4></div>');
@@ -304,6 +310,9 @@
 			if(open)
 				proc[tik] = setInterval(function(){updateP(tik)},11000);
 			//^use assoc.arrays to clear/delete this interval obj in the future!
+
+			}
+			
 		});
 		
 		function updateP(sName)
@@ -334,32 +343,34 @@
 		{
 			console.log('sentiment data/news added');
 			//console.log(x.n,x.data);
-			$('#'+x.n+'rating').append('seems to have '+x.data.slice(-1)[0]+' news.')
+			$('#'+x.n+'rating').append('seems to have '+x.data.slice(-1)[0]+' news.');
 				//$.each(x.data,function (i)
-				for(var i=0; i<4;i++)
+				//for(var i=0; i<4;i++) old
+
+				x.data.slice(0,-1).map(i=>//skip the last elem as it's not an article
 				{
-				
-					if (x.data[i][0]=='')//searching for an undefined array didn't work the first time
+					if (i[0]=='')//searching for an undefined array didn't work the first time
 					{
 						$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div>')
 					
-						if(x.data[i][1]=='')
+						if(i[1]=='')
 						{	
-							$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+							$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
 						}
 						else
 						{
-							$('#'+x.n+'sent').append('<div class="col"><p>'+x.data[i][1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+							$('#'+x.n+'sent').append('<div class="col"><p>'+i[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
 						}
 					}
 					else
 					{
-						$('#'+x.n+'sent').append('<div class="col"><p>'+x.data[i][0]+'</p></div><div class="col"><p>'+x.data[i][1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+x.data[i][2]+' target=_blank>Source</a></h3><br><br>')
+						$('#'+x.n+'sent').append('<div class="col"><p>'+i[0]+'</p></div><div class="col"><p>'+i[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
 					}
+				});
 					//console.log('good :'+x.data[i][0]);
 					//console.log('bad :'+x.data[i][1]);
 					//console.log('link :'+x.data[i][2]);
-				}//);
+			//);
 		});
 			
 	function exam()

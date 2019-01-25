@@ -29,6 +29,17 @@ class stock:
 	def __init__(self,name):
 		self.name=name
 		
+	def isFake(self):#check to see if the recived stock does not exist 
+		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/annual/income-statement')
+		dom=BeautifulSoup(url.content, "html.parser")
+		try:
+			data=dom.find('div',{'class':'cr_notfound_header module'}).text
+		except AttributeError:
+			return 0
+		else:
+			if 'Not Found' in data:#if it contains these words...
+				return 1
+
 	def getName(self):
 		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/annual/income-statement')
 		dom=BeautifulSoup(url.content, "html.parser")
@@ -151,20 +162,23 @@ def get(name):
 	print"Processing "+name['sym']
 	print'=============\n'
 	x=stock(name['sym'])
-	nums= x.getPrices()
-	fin=x.getFin()
-	post=json.loads(json.dumps({
-		'n':x.getName(),
-		'p':nums[0],
-		'diff':nums[1],
-		'op':nums[2],
-		'cap':fin[0],
-		'eps':fin[1],
-		'pe':fin[2],
-		'de':fin[3],
-		'pb':fin[4]
-	}))
-	socketio.emit('reply',post)
+	if x.isFake():
+		socketio.emit('reply',json.loads(json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'})))
+	else:
+		nums= x.getPrices()
+		fin=x.getFin()
+		post=json.loads(json.dumps({
+			'n':x.getName(),
+			'p':nums[0],
+			'diff':nums[1],
+			'op':nums[2],
+			'cap':fin[0],
+			'eps':fin[1],
+			'pe':fin[2],
+			'de':fin[3],
+			'pb':fin[4]
+		}))
+		socketio.emit('reply',post)
 
 @socketio.on('fetch')#fetches new prices/data
 def get(n):
@@ -245,5 +259,9 @@ def get(n):
 #	}))
 #	socketio.emit('nums',dat)
 
+
+#for testing
+#x=stock('NDLX')
+#x.isFake()
 if __name__=='__main__':
 	socketio.run(app)
