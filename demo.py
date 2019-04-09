@@ -158,9 +158,9 @@ def index():
 #---------------
 @socketio.on('get')#fetches static data i.e mkCap. p/e ratio 
 def get(name):
-	print '\n============'
-	print"Processing "+name['sym']
-	print'=============\n'
+	print ('\n============')
+	print ("Processing "+name['sym'])
+	print ('=============\n')
 	x=stock(name['sym'])
 	if x.isFake():
 		socketio.emit('reply',json.loads(json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'})))
