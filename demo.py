@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
+import json
+from collections import OrderedDict
+
 from flask import jsonify
 
 import json
@@ -147,9 +150,26 @@ class stock:
 			array.append(i.text)
 		'''
 		return array
-		
-	def getSent():
-		return 1	
+
+def getHistory(stockName):
+	data = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='+stockName+'&outputsize=full&apikey=EOQA5AGR365JSWES')
+	data = json.loads(data.text,object_pairs_hook=OrderedDict)['Time Series (Daily)']
+		#force organize json
+
+	diff=datetime.today().year-1
+	lastYear=datetime.today().replace(year=diff).isoformat()[:10]#one year ago
+	start=(data[lastYear]['4. close'])#last years closing price
+	cPrice = []#[[dates,closing prices],[...],...]
+	c=0
+	for date in data:
+		if c==252:
+			break;
+		else:
+			cPrice.append([date,(float(data[date]['4. close'])/float(start))])
+			c+=1
+	cPrice=cPrice[::-1]#reverse list
+	#print(cPrice)
+	return cPrice
 #---------------
 
 @app.route('/')
@@ -158,9 +178,9 @@ def index():
 #---------------
 @socketio.on('get')#fetches static data i.e mkCap. p/e ratio 
 def get(name):
-	print ('\n============')
-	print ("Processing "+name['sym'])
-	print ('=============\n')
+	print ('\n=============')
+	print("Processing "+name['sym'])
+	print('=============\n')
 	x=stock(name['sym'])
 	if x.isFake():
 		socketio.emit('reply',json.loads(json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'})))
@@ -192,42 +212,50 @@ def get(n):
 def make(n):
 
 	rate=""
-	
-	conv=lambda x:x/x[0]
-	diff=datetime.today().year-1
-	start=datetime.today().replace(year=diff)#one year ago	
-	end=datetime.today()
+	#conv=lambda x:x/x[0]
+	#end=datetime.today()
 	x=stock(n['sym'])
+
+	cPrice=getHistory(n['sym'])
 	comp=x.getComp()#retrieve competition
-	data=web.DataReader(str(n['sym']).upper(),'iex',start,end)##must uppercase stock tik?
-	
-	debut=float(data['close'][0])#determine if stock has grown last year
-	fin=float(data['close'][-1])
-	
-	if fin > debut:
+
+	#data=web.DataReader('F','robinhood')
+	#data=web.DataReader(str(n['sym']).upper(),'iex',start,end)##must uppercase stock tik?
+	#cPrice=cPrice[]#reverse
+	#cPrice=cPrice[1]
+	start=cPrice[0][1]
+	end=cPrice[-1][1]
+
+	#start=float(data['close_price'][0])#determine if stock has grown last year
+	#end=float(data['close_price'][-1])
+
+	if end > start:
 		rate="grown"
 	else:
 		rate="fell"
-	
-	data=conv(data['close'])#convert to %Growth
+
+	#data=conv(data['close'])#convert to %Growth
 	line_chart=pygal.Line(height=400,style=DarkStyle)
 	line_chart.title='Performance Since Last Year'
 	line_chart.x_title='Days'
 	line_chart.y_title='% Change'
-	line_chart.x_labels=data.reset_index()['date']#label x-axis by dates
-	line_chart.add(n['sym'], data)
+	line_chart.x_labels=map(lambda x:x[0],cPrice)#label x-axis by dates
+	line_chart.add(n['sym'],list(map(lambda x:x[1],cPrice)))
+
 	for i in comp:
 		#print i
-		try:
+		""" try:
 			s=web.DataReader(str(i[0]),'iex',start,end)
-			s=conv(s['close'])#convert to %Growth
+			s=conv(s['close_price'])#convert to %Growth
 			line_chart.add(i[1],s)
 		except:
 			pass
+		"""
+		closingPrices=getHistory(i[0])
+		line_chart.add(i[1],list(map(lambda x:x[1],closingPrices)))	
 	img=line_chart.render_data_uri()
 	info=json.loads(json.dumps({'n':n['sym'],'chart':img,'perf':rate}))
-	socketio.emit('paste',info)
-	
+	socketio.emit('paste',info) 
 	
 @socketio.on('sentiment')
 def get(n):
@@ -261,7 +289,8 @@ def get(n):
 
 
 #for testing
-#x=stock('NDLX')
+#x=stock('F')
+
 #x.isFake()
 if __name__=='__main__':
 	socketio.run(app)
