@@ -212,6 +212,13 @@
 					height: 40%;
 				}
 			}
+			@media(max-width:600px)
+			{
+				.s
+				{
+					width: 92%;
+				}
+			}
 			/*Inline CSS for Good & Bad in .sent*/
 	</style>
 	<body>
@@ -258,6 +265,9 @@
 		$('body').css('color','white');
 		$('.box').css('border','white 5px solid');
 	}
+
+	var proc={};//window processes
+
 	/*
 	if (today >= 7 && today <= 16) {
    document.body.style.background = "Red";
@@ -342,35 +352,27 @@
 		socket.on('sent',function(x)
 		{
 			console.log('sentiment data/news added');
-			//console.log(x.n,x.data);
+			//console.log(x.data.slice(-1)[0]);
 			$('#'+x.n+'rating').append('seems to have '+x.data.slice(-1)[0]+' news.');
-				//$.each(x.data,function (i)
-				//for(var i=0; i<4;i++) old
-
-				x.data.slice(0,-1).map(i=>//skip the last elem as it's not an article
+			x.data.slice(0,-1).map(article=>
+			{
+				//console.log(article);
+				if(article[0].length===0)
 				{
-					if (i[0]=='')//searching for an undefined array didn't work the first time
+					if(article[1].length===0)
 					{
-						$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div>')
-					
-						if(i[1]=='')
-						{	
-							$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
-						}
-						else
-						{
-							$('#'+x.n+'sent').append('<div class="col"><p>'+i[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
-						}
+						$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div> <div class="col"><p class=center>-Not Available-</p></div><div style="clear:both;"></div><h3 class=center><a href='+article[2]+' target=_blank>Source</a></h3><br><br>');
 					}
 					else
 					{
-						$('#'+x.n+'sent').append('<div class="col"><p>'+i[0]+'</p></div><div class="col"><p>'+i[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+i[2]+' target=_blank>Source</a></h3><br><br>')
+						$('#'+x.n+'sent').append('<div class="col"><p class=center>-Not Available-</p></div> <div class="col"><p class=center>'+article[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+article[2]+' target=_blank>Source</a></h3><br><br>');
 					}
-				});
-					//console.log('good :'+x.data[i][0]);
-					//console.log('bad :'+x.data[i][1]);
-					//console.log('link :'+x.data[i][2]);
-			//);
+				}
+				else
+				{
+					$('#'+x.n+'sent').append('<div class="col"><p class=center>'+article[0]+'</p></div> <div class="col"><p class=center>'+article[1]+'</p></div><div style="clear:both;"></div><h3 class=center><a href='+article[2]+' target=_blank>Source</a></h3><br><br>');
+				}
+			});
 		});
 			
 	function exam()
@@ -385,7 +387,7 @@
 		$($data).css('display','block')
 		$('.modal').css('display','block')
 	}//difficult
-	//cannot add events to dynamically made DOM/elemnts
+	//cannot add events to dynamically made DOM/elements
 	//supposedly they don't exist!
 	
 	$(document).keyup(function(e)
@@ -408,7 +410,7 @@
 		//sending entire element, so use stock.id
 		try
 		{
-			window.clearInterval(proc[stock.id]);
+			window.clearInterval(proc[stock.id]);//kill the process from the browser
 		}
 		catch(e)
 		{
@@ -419,3 +421,4 @@
 		//API KEY for Alpha Vantage EOQA5AGR365JSWES
 	</script>
 </html>
+
