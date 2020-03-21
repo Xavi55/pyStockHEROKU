@@ -21,22 +21,31 @@ from datetime import datetime
 import pygal
 from pygal.style import DarkStyle
 
-import sent #other file
+#import sent #other file
 
 #import locale
 #locale.setlocale(locale.LC_ALL,'') #use conventional number formatting
 app=Flask(__name__)
 app.config['SECRET_KEY'] = 'omega001'
 socketio = SocketIO( app )
-class stock:
+
+HEADERS={
+	'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
+	'cache-control': "no-cache",
+    'postman-token': "8c88c040-ad4b-852b-905d-6788dfa2929b"
+}
+
+class Stock:
+
+	page=None
 	def __init__(self,name):
 		self.name=name
-		
-	def isFake(self):#check to see if the recived stock does not exist 
-		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/annual/income-statement')
-		dom=BeautifulSoup(url.content, "html.parser")
+		url=requests.request('GET','https://www.wsj.com/market-data/quotes/{}'.format(self.name),headers=HEADERS)
+		self.page=BeautifulSoup(url.content, "html.parser")
+
+	def isFake(self):#is the stock real
 		try:
-			data=dom.find('div',{'class':'cr_notfound_header module'}).text
+			data=self.page.find('div',class_='cr_notfound_header module').text
 		except AttributeError:
 			return 0
 		else:
@@ -44,19 +53,11 @@ class stock:
 				return 1
 
 	def getName(self):
-		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/annual/income-statement')
-		dom=BeautifulSoup(url.content, "html.parser")
-		data=dom.find('h1')
-		while True:
-			try:
-				tik=data.find('span',{'class':'tickerName'}).text
-				co=data.find('span',{'class':'companyName'}).text
-				ex=data.find('span',{'class':'exchangeName'}).text.replace('(','').replace(')','')
-			except AttributeError:
-				#print "Retrying..."
-				#pass
-				continue
-			return tik+' '+co+' '+' '+ex
+		head=self.page.find('div',class_='cr_quotesHeader').findAll('span')
+		co=head[0].text
+		tik=head[1].text
+		exch=re.sub(r"(\(|\))",'',head[2].text)#elim parens
+		return tik+' '+co+' '+' '+exch
 		#data=dom.find('div',{'class','cr_quotesHeader'})
 		#print data
 		#name=data.find('span').text
@@ -65,36 +66,25 @@ class stock:
 		#return name
 	
 	def getPrices(self):
-		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/annual/income-statement')
-		page=BeautifulSoup(url.content, "html.parser")
 		array=[]
-		while True:
-			try:
-				array.append(float(page.find(id='quote_val').text.replace(',','')))
-				array.append(page.find('li',{'class':'crinfo_diff'}).text)
-				array.append(page.find_all('span',{'class':'data_data'})[5].text)
-			except AttributeError:
-				#print "...Retrying"
-				continue
-				#pass
-			return array
-		#array.append())#round it?
-		#array.append()
-		#array.append()
-		#return [1,2,3]
-		#return array
+		array.append(float(self.page.find('span',class_='cr_curr_price').text.replace('$','')))
+		array.append(self.page.find('li',class_='crinfo_diff').text)
+		array.append(self.page.find('span',class_='data_data').text)
+		#print(array)
+		return array
 		
 		#gathers financial data as of most recent quarter(s)
 	def getFin(self):
 		#income statement data
-		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/quarter/income-statement')
+		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/quarter/income-statement',headers=HEADERS)
 		incPage=BeautifulSoup(url.content, "html.parser")
 		#data=dom.find_all('tbody')[1].find_all('td')
 		#data=dom.find('table',{'class':'cr_dataTable'}).find_all('td')
-		data=incPage.find('td',string='EPS (Basic)').find_next_siblings("td")
+		data=incPage.find('td',string='EPS (Basic)').parent.findAll('td')
+		
 		eps=0
 		#check for negative values
-		for k in data[:4]:
+		for k in data[1:5]:
 			if '(' in k.text:
 				eps=eps+-1*float(re.sub('[\(\)]','',k.text))
 			else:
@@ -113,12 +103,16 @@ class stock:
 			CAP=str(int(mCap/1000000))+"M"
 		else:
 			CAP=str(int(mCap)/1000000000)+"B"
-		pe=round((float(price)/float(eps)),2)
+		pe=round((float(price)/float(eps)),2)#price/earnings
 		if pe<0:
 			pe='NEG'
 		
 		#balance sheet data
-		url2=requests.get('http://quotes.wsj.com/'+self.name+'/financials/quarter/balance-sheet')
+		"""
+		TODO HERE
+		recalculate debt/equity?
+		"""
+		url2=requests.get('http://quotes.wsj.com/'+self.name+'/financials/quarter/balance-sheet',headers=HEADERS)
 		balPage=BeautifulSoup(url2.content, "html.parser")	
 		liab=balPage.find('td',string='Total Liabilities').find_next_sibling("td").text.replace(',','')
 		equity=balPage.find('td',string='Total Equity').find_next_sibling("td").text.replace(',','')#negative equity .. remove parathenses ?
@@ -129,26 +123,21 @@ class stock:
 		else:
 			equity=float(equity)*1000000
 			liab=float(liab)*1000000
-		de=round(liab/equity,2)		
-		pb=round((float(price)/(equity/shares)),2)
+		de=round(liab/equity,2)#debt/equity
+		pb=round((float(price)/(equity/shares)),2)#price/book
 		array=[CAP,eps,pe,de,pb]
-		#print array
-		return array
+		print(array)
+		#return array
 		
 	def getComp(self):
-		url=requests.get('http://quotes.wsj.com/'+self.name)
-		fPage=BeautifulSoup(url.content, "html.parser")
-		tik=fPage.find(id='cr_competitors_table').find_all('h5')
-		name=fPage.find(id='cr_competitors_table').find_all('h4')
+		tik=self.page.find(id='cr_competitors_table').find_all('h5')
+		name=self.page.find(id='cr_competitors_table').find_all('h4')
 		
 		array=[]
 		#test=[]
-		for i in range(0,len(tik))[:3]:	#first 3 counts in range
+		for i in range(0,len(tik))[:4]:	#first 3 comps
 			array.append([tik[i].text,name[i].text])	#append ( array+array ) = 2d array/list
-		'''
-		for i in tik[:3]:
-			array.append(i.text)
-		'''
+		#print(array)
 		return array
 
 def getHistory(stockName):
@@ -181,7 +170,7 @@ def get(name):
 	print ('\n=============')
 	print("Processing "+name['sym'])
 	print('=============\n')
-	x=stock(name['sym'])
+	x=Stock(name['sym'])
 	if x.isFake():
 		socketio.emit('reply',json.loads(json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'})))
 	else:
@@ -214,7 +203,7 @@ def make(n):
 	rate=""
 	#conv=lambda x:x/x[0]
 	#end=datetime.today()
-	x=stock(n['sym'])
+	x=Stock(n['sym'])
 
 	cPrice=getHistory(n['sym'])
 	comp=x.getComp()#retrieve competition
@@ -244,13 +233,13 @@ def make(n):
 
 	for i in comp:
 		#print i
-		""" try:
-			s=web.DataReader(str(i[0]),'iex',start,end)
-			s=conv(s['close_price'])#convert to %Growth
-			line_chart.add(i[1],s)
-		except:
-			pass
-		"""
+		# try:
+		#	s=web.DataReader(str(i[0]),'iex',start,end)
+		#	s=conv(s['close_price'])#convert to %Growth
+		#	line_chart.add(i[1],s)
+		#except:
+		#	pass
+
 		closingPrices=getHistory(i[0])
 		line_chart.add(i[1],list(map(lambda x:x[1],closingPrices)))	
 	img=line_chart.render_data_uri()
@@ -287,10 +276,10 @@ def get(n):
 #	}))
 #	socketio.emit('nums',dat)
 
-
 #for testing
-#x=stock('F')
-
+x=Stock('F')
+x.getFin()
 #x.isFake()
-if __name__=='__main__':
-	socketio.run(app)
+
+""" if __name__=='__main__':
+	socketio.run(app) """
