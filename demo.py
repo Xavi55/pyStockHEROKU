@@ -12,16 +12,16 @@ from flask import jsonify
 
 import json
 import re
-
+""" 
 import pandas as pd
 import numpy as np
 import pandas_datareader.data as web
+"""
 from datetime import datetime
-
 import pygal
 from pygal.style import DarkStyle
 
-#import sent #other file
+import sent #other file
 
 #import locale
 #locale.setlocale(locale.LC_ALL,'') #use conventional number formatting
@@ -66,10 +66,10 @@ class Stock:
 		#return name
 	
 	def getPrices(self):
-		array=[]
+		array=[]#price, %diff, opening price
 		array.append(float(self.page.find('span',class_='cr_curr_price').text.replace('$','')))
 		array.append(self.page.find('li',class_='crinfo_diff').text)
-		array.append(self.page.find('span',class_='data_data').text)
+		array.append(self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text)
 		#print(array)
 		return array
 		
@@ -126,8 +126,8 @@ class Stock:
 		de=round(liab/equity,2)#debt/equity
 		pb=round((float(price)/(equity/shares)),2)#price/book
 		array=[CAP,eps,pe,de,pb]
-		print(array)
-		#return array
+		#print(array)
+		return array
 		
 	def getComp(self):
 		tik=self.page.find(id='cr_competitors_table').find_all('h5')
@@ -277,9 +277,9 @@ def get(n):
 #	socketio.emit('nums',dat)
 
 #for testing
-x=Stock('F')
-x.getFin()
+#x=Stock('F')
+#x.getPrices()
 #x.isFake()
 
-""" if __name__=='__main__':
-	socketio.run(app) """
+if __name__=='__main__':
+	socketio.run(app)
