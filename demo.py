@@ -67,11 +67,16 @@ class Stock:
 	
 	def getPrices(self):
 		array=[]#price, %diff, opening price
-		array.append(float(self.page.find('span',class_='cr_curr_price').text.replace('$','')))
-		array.append(self.page.find('li',class_='crinfo_diff').text)
-		array.append(self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text)
+		try:
+			array.append(round(float(self.page.find('span',class_='cr_curr_price').text.replace('$','')),2))
+			array.append(self.page.find('li',class_='crinfo_diff').text)
+			array.append(self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text)
 		#print(array)
-		return array
+		except Exception as e:
+			print('getPrices()',e)
+			pass
+		else:
+			return array
 		
 		#gathers financial data as of most recent quarter(s)
 	def getFin(self):
@@ -191,7 +196,7 @@ def get(name):
 
 @socketio.on('fetch')#fetches new prices/data
 def get(n):
-	x=stock(n['sym'])
+	x=Stock(n['sym'])
 	nums=x.getPrices()
 	info=json.loads(json.dumps({'n':n['sym'],'p':nums[0],'diff':nums[1]}))
 	socketio.emit('update',info)

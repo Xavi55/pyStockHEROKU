@@ -310,7 +310,29 @@
 			console.log('added',data.n);
 			var tik=data.n.split(' ')[0];
 			//console.log(tik);
-			$('.box').append(`<div id=${tik} class=data><h4 class=name>${data.n}<span class=kill onclick=kill(${tik})>❌</span></h4><h4 class=price id='+tik+'price>Price: $${data.p}</h4><h4 class=open>Open: $${data.op}</h4><h4 class=percent>Change: <span class=p id=${tik}diff>${data.diff}</span></h4><h4 class=mcap>Market Cap: $${data.cap}</h4><h4 class=eps>Earnings/Share: $${data.eps}</h4><h4 class=pe>P/E: ${data.pe}</h4><h4 class=de>Debt/Equity: ${data.de}</h4><h4 class=pb>Book Value: ${data.pb}</h4><div class=chart id=${tik}chart style=display:none></div><br><br><h4 class=show onclick=show(${tik}chart);>Show Competition</h4> <div id=${tik}sent class=sent style=display:none><h3 class=center>News Sentiment</h3><br><div><h4 class="center" style="float:left;width:50%;">Good</h4><h4 class="center" style="float:left;width:50%;">Bad</h4><br><br></div></div><h4 class=show onclick=show(${tik}sent)>Show Sentiment</h4><h4 class=rating id=${tik} rating></h4></div>`);
+			$('.box').append(`
+				<div id=${tik} class=data>
+					<h4 class=name>${data.n}<span class=kill onclick=kill(${tik})>❌</span></h4>
+					<h4 class=price id=${tik}price>Price: $${data.p}</h4>
+					<h4 class=open>Open: $${data.op}</h4>
+					<h4 class=percent>Change: <span class=p id=${tik}diff>${data.diff}</span></h4>
+					<h4 class=mcap>Market Cap: $${data.cap}</h4>
+					<h4 class=eps>Earnings/Share: $${data.eps}</h4>
+					<h4 class=pe>P/E: ${data.pe}</h4>
+					<h4 class=de>Debt/Equity: ${data.de}</h4>
+					<h4 class=pb>Book Value: ${data.pb}</h4>
+					<div class=chart id=${tik}chart style=display:none></div><br><br>
+					<h4 class=show onclick=show(${tik}chart);>Show Competition</h4>
+					<div id=${tik}sent class=sent style=display:none>
+						<h3 class=center>News Sentiment</h3><br>
+						<div>
+							<h4 class="center" style="float:left;width:50%;">Good</h4>
+							<h4 class="center" style="float:left;width:50%;">Bad</h4><br><br>
+						</div>
+					</div>
+					<h4 class=show onclick=show(${tik}sent)>Show Sentiment</h4>
+					<h4 class=rating id=${tik}rating></h4>
+				</div>`);
 			//ROUNDING Math.round(data.p*100)/100
 			socket.emit('fin',{sym:tik});
 			socket.emit('chart',{sym:tik});
@@ -345,8 +367,8 @@
 		
 		socket.on('paste',function(x)
 		{
-			$('#'+x.n+'chart').append('<embed type=image/svg+xml src='+x.chart+'>')
-			$('#'+x.n+'rating').append('Perfomance has '+x.perf+' and ');
+			$(`#${x.n}chart`).append('<embed type=image/svg+xml src='+x.chart+'>')
+			$(`#${x.n}rating`).append('Perfomance has '+x.perf+' and ');
 		});
 			
 		socket.on('sent',function(x)
