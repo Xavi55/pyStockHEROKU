@@ -149,21 +149,28 @@ def getHistory(stockName):
 	data = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='+stockName+'&outputsize=full&apikey=EOQA5AGR365JSWES')
 	data = json.loads(data.text,object_pairs_hook=OrderedDict)['Time Series (Daily)']
 		#force organize json
-
+	
 	diff=datetime.today().year-1
 	lastYear=datetime.today().replace(year=diff).isoformat()[:10]#one year ago
-	start=(data[lastYear]['4. close'])#last years closing price
-	cPrice = []#[[dates,closing prices],[...],...]
-	c=0
-	for date in data:
-		if c==252:
-			break;
-		else:
-			cPrice.append([date,(float(data[date]['4. close'])/float(start))])
-			c+=1
-	cPrice=cPrice[::-1]#reverse list
-	#print(cPrice)
-	return cPrice
+	#print(data['2019-04-08'])
+	#exit()
+	try:
+		start=(data[lastYear]['4. close'])#last years closing price
+	except Exception as e:
+		print('prices for \'{}\' were not found'.format(lastYear))
+		return []
+	else:
+		cPrice = []#[[dates,closing prices],[...],...]
+		c=0
+		for date in data:
+			if c==252:
+				break;
+			else:
+				cPrice.append([date,(float(data[date]['4. close'])/float(start))])
+				c+=1
+		cPrice=cPrice[::-1]#reverse list
+		#print(cPrice)
+		return cPrice
 #---------------
 
 @app.route('/')
@@ -283,7 +290,7 @@ def get(n):
 
 #for testing
 #x=Stock('F')
-#x.getPrices()
+#print(getHistory('F'))
 #x.isFake()
 
 if __name__=='__main__':
