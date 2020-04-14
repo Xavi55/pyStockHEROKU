@@ -152,13 +152,43 @@ def getHistory(stockName):
 	
 	diff=datetime.today().year-1
 	lastYear=datetime.today().replace(year=diff).isoformat()[:10]#one year ago
-	#print(data['2019-04-08'])
+	start=None
+	dates=None
+	##handles if today last year was a weekend/holiday
+	#print(data['2019-04-06'])
 	#exit()
 	try:
-		start=(data[lastYear]['4. close'])#last years closing price
+		start=data[lastYear]['4. close']#last years closing price
 	except Exception as e:
 		print('prices for \'{}\' were not found'.format(lastYear))
-		return []
+		dates=lastYear.split('-')
+		print (dates)
+		found=0
+		while not found:
+			dates[2]=int(dates[2])-1
+			if dates[2]<=0:
+				dates[2]=dates[2]+32
+			try:
+				lastYear=datetime(int(dates[0]),int(dates[1]),dates[2])
+			except Exception as e:
+				continue
+			else:
+				lastYear=lastYear.isoformat()[:10]
+				#print(data[lastYear])
+				found=1
+				break
+		start=data[lastYear]['4. close']
+		cPrice = []#[[dates,closing prices],[...],...]
+		c=0
+		for date in data:
+			if c==252:
+				break;
+			else:
+				cPrice.append([date,(float(data[date]['4. close'])/float(start))])
+				c+=1
+		cPrice=cPrice[::-1]#reverse list
+		#print(cPrice)
+		return cPrice
 	else:
 		cPrice = []#[[dates,closing prices],[...],...]
 		c=0
