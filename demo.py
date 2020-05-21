@@ -66,17 +66,21 @@ class Stock:
 		#return name
 	
 	def getPrices(self):
-		array=[]#price, %diff, opening price
+		price, %diff, opening price
+		price=None
+		diff=None
+		oPrice=None
 		try:
-			array.append(round(float(self.page.find('span',class_='cr_curr_price').text.replace('$','')),2))
-			array.append(self.page.find('li',class_='crinfo_diff').text)
-			array.append(self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text)
-		#print(array)
+			price=self.page.find('span',class_='cr_curr_price').text
+			price=re.sub(r'(\$|,)','',price)
+
+			diff=self.page.find('li',class_='crinfo_diff').text
+			oPrice=self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text
 		except Exception as e:
 			print('getPrices()',e)
 			pass
 		else:
-			return array
+			return [price,diff,oPrice]
 		
 		#gathers financial data as of most recent quarter(s)
 	def getFin(self):
