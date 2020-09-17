@@ -12,7 +12,7 @@ def feels(stock):
 	news=doc.find_all('div',{'class':'FeedScroll-feed-container-106s7'})
 	if not len(news):
 		print('No articles were found')
-		return [['No articles were found','No articles were found','https://www.reuters.com'],['UNKWN']]
+		return [['No articles were found','No articles were found','https://www.reuters.com'],['Unknown']]
 	else:
 		items=news[0].find_all('div',{'class':'item'})[:7]
 		links={}
@@ -37,7 +37,7 @@ def feels(stock):
 			#print ('Searching in : %s'%(link))
 			url2=requests.get(links[link])
 			page=BeautifulSoup(url2.content,'html.parser')
-			article=page.find('div',{'class':'StandardArticleBody_body'}).text
+			article=page.find('div',class_='ArticleBodyWrapper').text
 			unwanted_text=page.findAll('div',{'class':'Image_caption'})#images have capitions
 			for words in unwanted_text:
 					article = article.replace(words.text,'')#remove caption
@@ -77,6 +77,6 @@ def feels(stock):
 			rate="bad"		
 		array.append(rate)
 		return array
+		#print(array)
 ###testing
 #feels('MMM')
-

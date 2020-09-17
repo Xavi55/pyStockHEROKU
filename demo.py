@@ -8,15 +8,9 @@ from flask_socketio import SocketIO, emit
 import json
 from collections import OrderedDict
 
-from flask import jsonify
-
 import json
 import re
-""" 
-import pandas as pd
-import numpy as np
-import pandas_datareader.data as web
-"""
+
 from datetime import datetime
 import pygal
 from pygal.style import DarkStyle
@@ -30,14 +24,12 @@ app.config['SECRET_KEY'] = 'omega001'
 socketio = SocketIO( app )
 
 HEADERS={
-	'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
+	'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
 	'cache-control': "no-cache",
     'postman-token': "8c88c040-ad4b-852b-905d-6788dfa2929b"
 }
 
 class Stock:
-
-	page=None
 	def __init__(self,name):
 		self.name=name
 		url=requests.request('GET','https://www.wsj.com/market-data/quotes/{}'.format(self.name),headers=HEADERS)
@@ -53,11 +45,13 @@ class Stock:
 				return 1
 
 	def getName(self):
-		head=self.page.find('div',class_='cr_quotesHeader').findAll('span')
-		co=head[0].text
-		tik=head[1].text
-		exch=re.sub(r"(\(|\))",'',head[2].text)#elim parens
-		return tik+' '+co+' '+' '+exch
+		fname=self.page.find('div',class_='WSJTheme--title--8uZ7oFS7')
+		details = fname.find('span').text.split()
+		co=fname.find('h1').text
+		tik=details[0]
+		exch=details[1]
+		return "{} {} {}".format(tik,co,exch)
+
 		#data=dom.find('div',{'class','cr_quotesHeader'})
 		#print data
 		#name=data.find('span').text
@@ -66,21 +60,22 @@ class Stock:
 		#return name
 	
 	def getPrices(self):
-		price, %diff, opening price
 		price=None
 		diff=None
 		oPrice=None
-		try:
-			price=self.page.find('span',class_='cr_curr_price').text
-			price=re.sub(r'(\$|,)','',price)
+		regex = r"\d+.?\d\d"
 
-			diff=self.page.find('li',class_='crinfo_diff').text
-			oPrice=self.page.findAll('ul',class_='cr_data_collection')[1].find('span',class_='data_data').text
+		try:
+			price=self.page.find('span',id='quote_val').text
+			diff=self.page.find('li',class_='WSJTheme--crinfo_diff--37sej31S').text
+			diff=re.findall(regex,diff)
+
+			oPrice=self.page.findAll('ul',class_='WSJTheme--cr_data_collection--iWUQrmxW')[1].findAll('span')[1].text
 		except Exception as e:
-			print('getPrices()',e)
+			print('Error inside getPrices()\n',e)
 			pass
 		else:
-			return [price,diff,oPrice]
+			return [price,diff[0]+' '+diff[1],oPrice]
 		
 		#gathers financial data as of most recent quarter(s)
 	def getFin(self):
@@ -109,9 +104,9 @@ class Stock:
 		
 		mCap=float(price)*shares
 		if mCap < 1000000000:
-			CAP=str(int(mCap/1000000))+"M"
+			CAP=str(round(mCap/1000000,2))+"M"
 		else:
-			CAP=str(int(mCap)/1000000000)+"B"
+			CAP=str(round(mCap/1000000000,2))+"B"
 		pe=round((float(price)/float(eps)),2)#price/earnings
 		if pe<0:
 			pe='NEG'
@@ -213,17 +208,17 @@ def index():
 #---------------
 @socketio.on('get')#fetches static data i.e mkCap. p/e ratio 
 def get(name):
-	print ('\n=============')
-	print("Processing "+name['sym'])
-	print('=============\n')
-	x=Stock(name['sym'])
-	if x.isFake():
-		socketio.emit('reply',json.loads(json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'})))
+	print ('\n==============\nProcessing {}\n==============\n'.format(name['sym']))
+
+	s=Stock(name['sym'])
+	if s.isFake():
+		socketio.emit('reply',json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'}))
 	else:
-		nums= x.getPrices()
-		fin=x.getFin()
-		post=json.loads(json.dumps({
-			'n':x.getName(),
+		
+		nums = s.getPrices()# [price, delta, opening price]
+		fin=s.getFin()
+		post=json.dumps({
+			'n':s.getName(),
 			'p':nums[0],
 			'diff':nums[1],
 			'op':nums[2],
@@ -232,19 +227,20 @@ def get(name):
 			'pe':fin[2],
 			'de':fin[3],
 			'pb':fin[4]
-		}))
+		})
 		socketio.emit('reply',post)
 
 @socketio.on('fetch')#fetches new prices/data
 def get(n):
-	x=Stock(n['sym'])
-	nums=x.getPrices()
+	s=Stock(n['sym'])
+	nums=s.getPrices()
 	info=json.loads(json.dumps({'n':n['sym'],'p':nums[0],'diff':nums[1]}))
 	socketio.emit('update',info)
 
 
 @socketio.on('chart')#makes charts for each input
 def make(n):
+	print('===\tRendering Chart\t===')
 
 	rate=""
 	#conv=lambda x:x/x[0]
@@ -290,7 +286,8 @@ def make(n):
 		line_chart.add(i[1],list(map(lambda x:x[1],closingPrices)))	
 	img=line_chart.render_data_uri()
 	info=json.loads(json.dumps({'n':n['sym'],'chart':img,'perf':rate}))
-	socketio.emit('paste',info) 
+	print("Chart Done\n")
+	socketio.emit('paste',info)
 	
 @socketio.on('sentiment')
 def get(n):
@@ -328,4 +325,6 @@ def get(n):
 #x.isFake()
 
 if __name__=='__main__':
-	socketio.run(app)
+	socketio.run(app,debug=True)
+
+

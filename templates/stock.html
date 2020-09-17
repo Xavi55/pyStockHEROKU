@@ -301,48 +301,48 @@
 		
 		socket.on('reply',function(data)
 		{ 
+			data=JSON.parse(data)
 			if(data.status==1)
 			{
 				alert(data.mess);
 			}
 			else
 			{
-			console.log('added',data.n);
-			var tik=data.n.split(' ')[0];
-			//console.log(tik);
-			$('.box').append(`
-				<div id=${tik} class=data>
-					<h4 class=name>${data.n}<span class=kill onclick=kill(${tik})>❌</span></h4>
-					<h4 class=price id=${tik}price>Price: $${data.p}</h4>
-					<h4 class=open>Open: $${data.op}</h4>
-					<h4 class=percent>Change: <span class=p id=${tik}diff>${data.diff}</span></h4>
-					<h4 class=mcap>Market Cap: $${data.cap}</h4>
-					<h4 class=eps>Earnings/Share: $${data.eps}</h4>
-					<h4 class=pe>P/E: ${data.pe}</h4>
-					<h4 class=de>Debt/Equity: ${data.de}</h4>
-					<h4 class=pb>Book Value: ${data.pb}</h4>
-					<div class=chart id=${tik}chart style=display:none></div><br><br>
-					<h4 class=show onclick=show(${tik}chart);>Show Competition</h4>
-					<div id=${tik}sent class=sent style=display:none>
-						<h3 class=center>News Sentiment</h3><br>
-						<div>
-							<h4 class="center" style="float:left;width:50%;">Good</h4>
-							<h4 class="center" style="float:left;width:50%;">Bad</h4><br><br>
+				console.log('added',data.n);
+				var tik=data.n.split(' ')[0];
+				//console.log(tik);
+				$('.box').append(`
+					<div id=${tik} class=data>
+						<h4 class=name>${data.n}<span class=kill onclick=kill(${tik})>❌</span></h4>
+						<h4 class=price id=${tik}price>Price: $${data.p}</h4>
+						<h4 class=open>Open: $${data.op}</h4>
+						<h4 class=percent>Change: <span class=p id=${tik}diff>${data.diff}</span></h4>
+						<h4 class=mcap>Market Cap: $${data.cap}</h4>
+						<h4 class=eps>Earnings/Share: $${data.eps}</h4>
+						<h4 class=pe>P/E: ${data.pe}</h4>
+						<h4 class=de>Debt/Equity: ${data.de}</h4>
+						<h4 class=pb>Book Value: ${data.pb}</h4>
+						<div class=chart id=${tik}chart style=display:none></div><br><br>
+						<h4 class=show onclick=show(${tik}chart);>Show Competition</h4>
+						<div id=${tik}sent class=sent style=display:none>
+							<h3 class=center>News Sentiment</h3><br>
+							<div>
+								<h4 class="center" style="float:left;width:50%;">Good</h4>
+								<h4 class="center" style="float:left;width:50%;">Bad</h4><br><br>
+							</div>
 						</div>
-					</div>
-					<h4 class=show onclick=show(${tik}sent)>Show Sentiment</h4>
-					<h4 class=rating id=${tik}rating></h4>
-				</div>`);
-			//ROUNDING Math.round(data.p*100)/100
-			socket.emit('fin',{sym:tik});
-			socket.emit('chart',{sym:tik});
-			
-			socket.emit('sentiment',{sym:tik});
-			
-			if(open)
-				proc[tik] = setInterval(function(){updateP(tik)},11000);
-			//^use assoc.arrays to clear/delete this interval obj in the future!
+						<h4 class=show onclick=show(${tik}sent)>Show Sentiment</h4>
+						<h4 class=rating id=${tik}rating></h4>
+					</div>`);
+				//ROUNDING Math.round(data.p*100)/100
 
+				socket.emit('fin',{sym:tik});
+				socket.emit('chart',{sym:tik});
+				socket.emit('sentiment',{sym:tik});
+				
+				//map window process to var
+				if(open)
+					proc[tik] = setInterval(function(){updateP(tik)},11000);
 			}
 			
 		});
@@ -359,7 +359,7 @@
 			$('#'+x.n+'diff').text(x.diff);
 			//console.log('12345');
 			//console.log(x.diff);
-			if(x.diff[2]==='-')
+			if(x.diff[0]==='-')
 				$('#'+x.n+'diff').css('color','red');
 			else
 				$('#'+x.n+'diff').css('color','#00ff61');
@@ -443,4 +443,6 @@
 		//API KEY for Alpha Vantage EOQA5AGR365JSWES
 	</script>
 </html>
+
+
 
