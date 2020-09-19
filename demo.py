@@ -51,25 +51,17 @@ class Stock:
 		tik=details[0]
 		exch=details[1]
 		return "{} {} {}".format(tik,co,exch)
-
-		#data=dom.find('div',{'class','cr_quotesHeader'})
-		#print data
-		#name=data.find('span').text
-		#print name
-		#name=re.sub('[()]','',name).#remove parentheses
-		#return name
 	
 	def getPrices(self):
 		price=None
 		diff=None
 		oPrice=None
-		regex = r"\d+.?\d\d"
+		regex = r".?\d+.?\d+"
 
 		try:
 			price=self.page.find('span',id='quote_val').text
-			diff=self.page.find('li',class_='WSJTheme--crinfo_diff--37sej31S').text
+			diff=self.page.find('span',id='quote_deltaBar').text
 			diff=re.findall(regex,diff)
-
 			oPrice=self.page.findAll('ul',class_='WSJTheme--cr_data_collection--iWUQrmxW')[1].findAll('span')[1].text
 		except Exception as e:
 			print('Error inside getPrices()\n',e)
@@ -134,8 +126,9 @@ class Stock:
 		return array
 		
 	def getComp(self):
-		tik=self.page.find(id='cr_competitors_table').find_all('h5')
-		name=self.page.find(id='cr_competitors_table').find_all('h4')
+		table=self.page.find('table',id="cr_competitors_table")
+		tik=table.find_all('h5')
+		name=table.find_all('h4')
 		
 		array=[]
 		#test=[]

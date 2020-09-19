@@ -368,14 +368,14 @@
 		socket.on('paste',function(x)
 		{
 			$(`#${x.n}chart`).append('<embed type=image/svg+xml src='+x.chart+'>')
-			$(`#${x.n}rating`).append('Perfomance has '+x.perf+' and ');
+			$(`#${x.n}rating`).append('Perfomance has '+x.perf+'. ');
 		});
 			
 		socket.on('sent',function(x)
 		{
 			console.log('sentiment data/news added');
 			//console.log(x.data.slice(-1)[0]);
-			$('#'+x.n+'rating').append('seems to have '+x.data.slice(-1)[0]+' news.');
+			$('#'+x.n+'rating').append('Seems to have '+x.data.slice(-1)[0]+' news. ');
 			x.data.slice(0,-1).map(article=>
 			{
 				//console.log(article);
