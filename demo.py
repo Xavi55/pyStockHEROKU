@@ -24,7 +24,7 @@ app.config['SECRET_KEY'] = 'omega001'
 socketio = SocketIO( app )
 
 HEADERS={
-	'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
+	'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36',
 	'cache-control': "no-cache",
     'postman-token': "8c88c040-ad4b-852b-905d-6788dfa2929b"
 }
@@ -59,18 +59,17 @@ class Stock:
 		regex = r".?\d+.?\d+"
 
 		try:
-			price=self.page.find('span',id='quote_val').text
+			price=self.page.select('#quote_val')[0].text
 			diff=self.page.find('span',id='quote_deltaBar').text
 			diff=re.findall(regex,diff)
-			oPrice=self.page.findAll('ul',class_='WSJTheme--cr_data_collection--iWUQrmxW')[1].findAll('span')[1].text
+			oPrice=self.page.find('div',class_='WSJTheme--cr_compare_data--AUbygIzl').li.select('span ~ span')[0].text
 		except Exception as e:
 			print('Error inside getPrices()\n',e)
-			pass
+			return 0
 		else:
 			return [price,diff[0]+' '+diff[1],oPrice]
 		
-		#gathers financial data as of most recent quarter(s)
-	def getFin(self):
+	def getFin(self):#gathers financial data as of most recent quarter(s)
 		#income statement data
 		url=requests.get('http://quotes.wsj.com/'+self.name+'/financials/quarter/income-statement',headers=HEADERS)
 		incPage=BeautifulSoup(url.content, "html.parser")
@@ -201,27 +200,28 @@ def index():
 #---------------
 @socketio.on('get')#fetches static data i.e mkCap. p/e ratio 
 def get(name):
-	print ('\n==============\nProcessing {}\n==============\n'.format(name['sym']))
+	print ('==============\nProcessing {}\n==============\n'.format(name['sym']))
 
 	s=Stock(name['sym'])
 	if s.isFake():
-		socketio.emit('reply',json.dumps({'status':1,'mess':'Not A Real Stock. Try Again!'}))
+		socketio.emit('reply',json.dumps({'status':1,'mess':'Not A Real Stock. Try again with a real stock!'}))
+
 	else:
-		
-		nums = s.getPrices()# [price, delta, opening price]
-		fin=s.getFin()
-		post=json.dumps({
-			'n':s.getName(),
-			'p':nums[0],
-			'diff':nums[1],
-			'op':nums[2],
-			'cap':fin[0],
-			'eps':fin[1],
-			'pe':fin[2],
-			'de':fin[3],
-			'pb':fin[4]
-		})
-		socketio.emit('reply',post)
+		nums = s.getPrices()# [price, delta, opening price]'
+		if(nums):
+			fin=s.getFin()
+			post=json.dumps({
+				'n':s.getName(),
+				'p':nums[0],
+				'diff':nums[1],
+				'op':nums[2],
+				'cap':fin[0],
+				'eps':fin[1],
+				'pe':fin[2],
+				'de':fin[3],
+				'pb':fin[4]
+			})
+			socketio.emit('reply',post)
 
 @socketio.on('fetch')#fetches new prices/data
 def get(n):
@@ -313,11 +313,10 @@ def get(n):
 #	socketio.emit('nums',dat)
 
 #for testing
-#x=Stock('F')
+#x=Stock('MMM')
+#print(x.getPrices())
 #print(getHistory('F'))
 #x.isFake()
 
 if __name__=='__main__':
 	socketio.run(app,debug=True)
-
-
